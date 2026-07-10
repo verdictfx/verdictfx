@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VerdictFX — Top 50 Traders v1.4.0</title>
+  <title>VerdictFX — Top 50 Traders v1.5.0</title>
   <meta name="description" content="Top 50 Traders — Prediction Markets Leaderboard. Real-time rankings via Polymarket API. Wallet, P&L, Portfolio Value & Progression.">
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -251,7 +251,7 @@
     </div>
   </nav>
 
-  <span class="version-badge">v1.4.0</span>
+  <span class="version-badge">v1.5.0</span>
 
   <section class="hero">
     <div class="hero-eyebrow">
@@ -559,7 +559,7 @@
         <td>
           <div class="name-cell">
             <div class="avatar">${avatar}</div>
-            <a class="profile-link" href="https://polymarket.com/profile/${encodeURIComponent(username || wallet)}" target="_blank" rel="noopener" title="Voir le profil sur Polymarket">
+            <a class="profile-link" href="https://polymarket.com/profile/${wallet}" target="_blank" rel="noopener" title="Voir le profil sur Polymarket">
               <span class="name-text">${esc(username)}</span>
               ${t.verifiedBadge ? '<span class="verified-badge">✓ Vérifié</span>' : ''}
             </a>
