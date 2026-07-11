@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VerdictFX — Top 50 Traders v1.6.0</title>
+  <title>VerdictFX — Top 50 Traders v1.7.0</title>
   <meta name="description" content="Top 50 Traders — Prediction Markets Leaderboard. Real-time rankings via Polymarket API. Wallet, P&L, Portfolio Value & Progression.">
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -85,7 +85,12 @@
     .filter-select option { background: #090620; }
     .filter-select:hover { border-color: rgba(96,165,250,0.25); }
 
-    .btn-load { position: relative; background: linear-gradient(135deg, #3b82f6, #60a5fa); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 700; padding: 12px 28px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, filter 0.2s; white-space: nowrap; font-family: 'Inter', sans-serif; letter-spacing: 0.02em; overflow: hidden; min-width: 190px; margin-top: 22px; box-shadow: 0 4px 20px rgba(59,130,246,0.4); }
+    .btn-load { position: relative; background: linear-gradient(135deg, #3b82f6, #60a5fa); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 700; padding: 12px 24px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, filter 0.2s; white-space: nowrap; font-family: 'Inter', sans-serif; letter-spacing: 0.02em; overflow: hidden; box-shadow: 0 4px 20px rgba(59,130,246,0.4); }
+    .btn-csv { display: inline-flex; align-items: center; gap: 6px; background: var(--glass-fill); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; padding: 12px 20px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; white-space: nowrap; flex-shrink: 0; }
+    .btn-csv:hover:not(:disabled) { border-color: var(--violet); color: var(--violet-light); background: var(--violet-dim); }
+    .btn-csv:disabled { opacity: 0.35; cursor: not-allowed; }
+    .filters-actions { display: flex; gap: 10px; margin-top: 22px; }
+    .filters-actions .btn-load { flex: 1; }
     .btn-load::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent 60%); pointer-events: none; }
     .btn-load:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(59,130,246,0.45), 0 0 0 1px rgba(255,255,255,0.1) inset; filter: brightness(1.08); }
     .btn-load:active { transform: translateY(0); }
@@ -212,7 +217,8 @@
     @media (max-width: 640px) {
       .filters-card { padding: 20px; }
       .filters-row { flex-direction: column; }
-      .btn-load { width: 100%; }
+      .btn-load { flex: 1; }
+      .filters-actions { flex-direction: column; }
       .page { padding: 0 12px 40px; }
     }
   </style>
@@ -251,7 +257,7 @@
     </div>
   </nav>
 
-  <span class="version-badge">v1.6.0</span>
+  <span class="version-badge">v1.7.0</span>
 
   <section class="hero">
     <div class="hero-eyebrow">
@@ -294,10 +300,15 @@
           </select>
         </div>
       </div>
-      <button class="btn-load" id="loadBtn" onclick="loadLeaderboard()">
-        <span class="spinner"></span>
-        <span class="btn-text">🔍 &nbsp;Charger le Top 50</span>
-      </button>
+      <div class="filters-actions">
+        <button class="btn-load" id="loadBtn" onclick="loadLeaderboard()">
+          <span class="spinner"></span>
+          <span class="btn-text">🔍 &nbsp;Charger le Top 50</span>
+        </button>
+        <button class="btn-csv" id="csvBtn" onclick="downloadCSV()" disabled title="Télécharger en CSV">
+          📥 CSV
+        </button>
+      </div>
     </div>
   </section>
 
@@ -514,6 +525,7 @@
       }
 
       renderTable(traders, compRankMap, compPeriod, portfolioValues);
+      document.getElementById('csvBtn').disabled = false;
     } catch (err) {
       console.error(err);
       document.getElementById('tableBody').innerHTML =
@@ -575,6 +587,14 @@
     });
 
     tbody.innerHTML = html;
+
+    // Store for CSV export
+    lastCSVData = traders.map((t, i) => {
+      const r = parseInt(t.rank) || (i + 1);
+      const w = t.proxyWallet || '';
+      const pg = compRankMap && compPeriod ? getProgression(r, compRankMap[w.toLowerCase()], compPeriod) : { label: '—' };
+      return { rank: r, userName: t.userName || 'Anonymous', proxyWallet: w, pnl: t.pnl || 0, vol: t.vol || 0, progLabel: pg.label || '—' };
+    });
   }
 
   // ── Analysis ─────────────────────────────────────────────────────────────
@@ -724,6 +744,35 @@
   // ── Init ─────────────────────────────────────────────────────────────────
   window.loadLeaderboard = loadLeaderboard;
   window.addEventListener('DOMContentLoaded', () => { loadLeaderboard(); loadAnalysis('OVERALL'); });
+
+  // ── CSV Export ──────────────────────────────────────────────────────────
+  let lastCSVData = null;
+
+  function downloadCSV() {
+    if (!lastCSVData || !lastCSVData.length) return;
+    const headers = ['Rang', 'Nom', 'Wallet', 'P&L (USD)', 'Volume (USD)', 'Progression'];
+    const rows = lastCSVData.map(t => [
+      t.rank,
+      t.userName || 'Anonymous',
+      t.proxyWallet || '',
+      t.pnl || 0,
+      t.vol || 0,
+      t.progLabel || '—'
+    ]);
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const period = document.getElementById('periodSelect').value;
+    const cat = document.getElementById('categorySelect').value;
+    a.href = url;
+    a.download = `verdictfx-${cat.toLowerCase()}-${period.toLowerCase()}-top50.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  window.downloadCSV = downloadCSV;
 })();
 </script>
 </body>
